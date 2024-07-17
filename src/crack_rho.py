@@ -30,7 +30,7 @@ parser.add_argument("--bits_size",
 def solve_rho(G, Y, bits_size):
 
     starttime = time.time()
-    q = Y.order()
+    q = Y.order
     e = Point(0, 0)
     print(f'order = {q}')
     def new_xab(x, a, b, g, y, q):
@@ -51,7 +51,7 @@ def solve_rho(G, Y, bits_size):
         X, A, B = new_xab(X, A, B,  G, Y, q)
         X, A, B = new_xab(X, A, B,  G, Y, q)
         print(f"{x} , {X}")
-        if sum(np.isin((x - X))) > 0:
+        if sum(np.isin((x - X), e)) > 0:
             print("[+] Found Collision Pair!!")
             break
 
