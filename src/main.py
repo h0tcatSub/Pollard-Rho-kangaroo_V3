@@ -184,9 +184,9 @@ problems = [\
     ('03bcf7ce887ffca5e62c9cabbdb7ffa71dc183c52c04ff4ee5ee82e0c55c39d77b',105)]
 
 problem = 32
-for elem in problems:
-    s, n = elem
-    if problem == n: break
+#for elem in problems:
+#    s, n = elem
+#    if problem == n: break
 kangoo_power = 3
 Nt = Nw = 2**kangoo_power
 X = int(sys.argv[1], 16)
