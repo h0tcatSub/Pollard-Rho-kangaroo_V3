@@ -46,9 +46,37 @@ def mul2(P, p = modulo):
     return R
 
 def add(P, Q, p = modulo):
+
+    X = (P**3+7)%p 
+    pw = (p + 1) / 4 
+    Y = 1
+    for w in range(256):
+        if (pw >> w) & 1 == 1:
+            tmp = X
+            for k in range(w):
+                tmp = (tmp**2)%p
+            Y *= tmp
+            Y %= p
+    P_y = Y
+    if P_y % 2 != (X >> 256) % 2:
+        P_y = modulo - P_y
+
+    X = (Q**3+7)%p 
+    pw = (p + 1) / 4 
+    Y = 1
+    for w in range(256):
+        if (pw >> w) & 1 == 1:
+            tmp = X
+            for k in range(w):
+                tmp = (tmp**2)%p
+            Y *= tmp
+            Y %= p
+    Q_y = Y
+    if Q_y % 2 != (X >> 256) % 2:
+        Q_y = modulo - Q_y
     R = Point()
-    dx = Q.x - P.x
-    dy = Q.y - P.y    
+    dx = Q - P
+    dy = Q_y - P_y
     #c = dy * #gmpy2.invert(dx, p) % p     
     c = dy * rev(dx, p) % p     
     R.x = (c*c - P.x - Q.x) % p
@@ -63,21 +91,18 @@ def mulk(k, P = PG, p = modulo):
     else:
         return add(P, mulk( (k-1)/2, mul2(P, p), p), p)
 
-#def X2Y(X, p = modulo):
-#    if p % 4 != 3:
-#        print 'prime must be 3 modulo 4'
-#        return 0
-#    X = (X**3+7)%p 
-#    pw = (p + 1) / 4 
-#    Y = 1
-#    for w in range(256):
-#        if (pw >> w) & 1 == 1:
-#            tmp = X
-#            for k in range(w):
-#                tmp = (tmp**2)%p
-#            Y *= tmp
-#            Y %= p
-#    return Y
+def X2Y(X, p = modulo):
+    X = (X**3+7)%p 
+    pw = (p + 1) / 4 
+    Y = 1
+    for w in range(256):
+        if (pw >> w) & 1 == 1:
+            tmp = X
+            for k in range(w):
+                tmp = (tmp**2)%p
+            Y *= tmp
+            Y %= p
+    return Y
 
 def comparator():
     A, Ak, B, Bk = np.array([]), np.array([]), np.array([]), np.array([])
@@ -126,18 +151,18 @@ print ('P-table prepared'  )
 
 def search():
     global solved
-    DP_rarity = 1 << ((problem -  2*kangoo_power)/2 - 2)
+    DP_rarity = 1 << int((problem -  2*kangoo_power)/2 - 2)
     hop_modulo = ((problem-1) / 2) + kangoo_power 
     T, t, dt = np.array([]), np.array([]), np.array([])
     W, w, dw = np.array([]), np.array([]), np.array([])
     for k in range(Nt):
         t  = np.append(t, (3 << (problem - 2)) + random.randint(1, (1 << (problem - 1))))#-(1 << (problem - 2)) )
-        T  = np.append(T, mulk(t[k]))
+        T  = np.append(T, mulk(t[k]).x)
         dt = np.append(dt, 0)
         print(f"準備中... [{k} / {Nt}]")
     for k in range(Nw):
         w  = np.append(w, random.randint(1, (1 << (problem - 1))))
-        W  = np.append(W, add(W0,mulk(w[k])))
+        W  = np.append(W, add(W0,mulk(w[k]).x))
         dw = np.append(dw, 0)
     print('tame and wild herds are prepared', file = sys.stderr)
     oldtime = time.time()
@@ -189,8 +214,8 @@ problem = 32
 #    if problem == n: break
 kangoo_power = 3
 Nt = Nw = 2**kangoo_power
-X = int(sys.argv[1], 16)
-Y = int(sys.argv[2], 16)#X2Y(X % (2**256))
+X = 0x9d8c5d35231d75eb87fd2c5f05f65281ed9573dc41853288c62ee94eb2590b7a #int(sys.argv[1], 16)
+Y = 0x83c227263dece3d7e8afe4005eff667bb90dd33ce17c663b1e83b303b12c0348 #int(sys.argv[2], 16)#X2Y(X % (2**256))
 #if Y % 2 != (X >> 256) % 2: Y = modulo - Y
 #X = X % (2**256)
 W0 = Point(X,Y)
