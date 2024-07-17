@@ -8,7 +8,7 @@ class Point:
     x  = 0
     y  = 0
 
-    def __init__(self, order = order, modulo = modulo, x=Gx, y=Gy):
+    def __init__(self, x, y, order = order, modulo = modulo):
         self.x = x
         self.y = y
         self.order  = order
@@ -23,6 +23,9 @@ class Point:
     def __mul__(self, b):
         if type(b) == Point:
             return self.double(b)
+        if type(b) == np.ndarray:
+            mulk_vec = np.vectorize(self.mulk)
+            return mulk_vec(b)
         return self.mulk(b)
     
     def __eq__(self, Q):
@@ -34,8 +37,8 @@ class Point:
 
 
     def __sub__(self, Q): #これは普段使いません。 離散対数問題や攻撃には使えるかも...?
-        diff_point = Point(abs(self.x - Q.x), abs(self.y - Q.y))
-        return diff_point
+        #diff_point = Point((self.x - Q.x), (self.y - Q.y))
+        return #diff_point
 
 
     def __add__(self, q):
@@ -56,7 +59,7 @@ class Point:
 
     def add(self, p, q):
         if p == q:
-            return self.double(p)
+            return p.double(q)
         tmp = ( (q.y-p.y) * self.rev(q.x-p.x) ) % self.modulo
         x = (tmp ** 2 - p.x -q.x) % self.modulo
         y = (tmp * (p.x - x) - p.y) % self.modulo
@@ -84,19 +87,19 @@ class Point:
 
         return self.fermat(b, modulo)
 
-
-    def mul2(self, P, R):
-        c = 3*P.x*P.x*self.rev(2*P.y, self.modulo) % self.modulo
-        R.x = (c*c-2*P.x) % self.modulo
-        R.y = (c*(P.x - R.x)-P.y) % self.modulo
-        return R
-
     def mulk(self, k):
-        G = Point()
-        G_p = Point()
         scalar_bin = str(bin(k))[2:]
-        for i in range (1, len(scalar_bin)):
-            G_p = G_p.double(G_p)#self.mul2(G_p, G_p)
+        G_p = Point(self.Gx, self.Gy)
+        for i in range(1, len(scalar_bin)):
+            tmp = ( (3 * (G_p.x ** 2)) * self.rev(2 * G_p.y) ) % self.modulo
+            x   = (tmp ** 2 - 2 * G_p.x) % self.modulo
+            y   = (tmp * (G_p.x - x) - G_p.y) % self.modulo
+            G_p.x = x
+            G_p.y = y
             if scalar_bin[i] == "1":
-                G_p = G_p.add(G_p, G)
+                tmp = ( (self.y-G_p.y) * self.rev(self.x-G_p.x) ) % self.modulo
+                x = (tmp ** 2 - G_p.x -self.x) % self.modulo
+                y = (tmp * (G_p.x - x) - G_p.y) % self.modulo
+                G_p.x = x
+                G_p.y = y
         return G_p

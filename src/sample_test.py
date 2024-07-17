@@ -13,13 +13,16 @@ def solve_rho(G, Y, bits_size):
     for k in range(1, 4):
         pub_keys = np.append(pub_keys, G * k)
 
-    if sum(np.isin(pub_keys - Y, G)) > 0:
+    if sum(np.isin(pub_keys, Y)) > 0:
         print(pub_keys)
         print()
         print(f"sol. time: {format((time.time()-starttime))} sec")
         print()
         print("Kamijo Touma >> Kill that illusion!!")
-        key = np.where((pub_keys - Y) == G)[0]
+        key = np.where(pub_keys == Y)[0][0] + 1
+        assert G * key == Y
+        print(f"Private Key : 0x{format(key, '064x')}")
+        print("[+] OK.")
         return key
 
     def new_xab(x, a, b, g, y, q):
@@ -40,7 +43,7 @@ def solve_rho(G, Y, bits_size):
         X, A, B = new_xab(X, A, B,  G, Y, q)
         X, A, B = new_xab(X, A, B,  G, Y, q)
         print(f"{x} , {X}")
-        if sum(np.isin((x - X), e)) > 0:
+        if sum(np.isin(x, X)) > 0:
             print("[+] Found Collision Pair!!")
             break
 
@@ -63,7 +66,7 @@ def main():
     x = 0xf9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9
     y = 0x388f7b0f632de8140fe337e62a37f3566500a99934c2231b6cb9fd7584b8e672
     bits_size = 2 ** 16
-    G = Point()
+    G = Point(Point.Gx, Point.Gy)
     Q = Point(x, y)
     
     print("-" * 20)
