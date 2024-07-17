@@ -10,7 +10,7 @@ class Point:
     b  = 7
     G  = None
 
-    def __init__(self, a, b, order, modulo, x=Gx, y=Gy):
+    def __init__(self, a = 0, b = 7, order = order, modulo = modulo, x=Gx, y=Gy):
         self.x = x
         self.y = y
         self.a = a

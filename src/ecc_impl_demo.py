@@ -1,3 +1,5 @@
+import numpy as np
+
 global modulo
 class Point:
     modulo = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
@@ -100,6 +102,6 @@ pub_keys = np.array([])
 G = Point()
 for k in keys:
     pub_keys = np.append(pub_keys, G * k)
-    print(f"Generating public_keys.... [{k} / {step_bits}]", end="\r")
+    print(f"Generating Public_keys.... [{k} / {step_bits}]", end="\r")
 print()
 print(pub_keys)
