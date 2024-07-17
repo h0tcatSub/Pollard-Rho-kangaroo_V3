@@ -54,8 +54,11 @@ def solve_rho(G, Y, bits_size):
         if sum(np.isin((x - X))) > 0:
             print("[+] Found Collision Pair!!")
             break
+
     print()
-    print("Kamijo Touma >> Kill that illusion!!")
+    print(f"sol. time: {format((time.time()-starttime), '%.2f')} sec")
+    print()
+    print("Kamijo Touma>> Kill that illusion!!")
     print()
     res = ((a - A) * pow(B - b, -1, q)) % q
     if G * res == Y:
