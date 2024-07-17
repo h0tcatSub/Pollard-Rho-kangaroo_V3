@@ -95,7 +95,7 @@ def comparator():
             b = int(L[1])
             B  = np.append(B, a)
             Bk = np.append(Bk, b)
-    result = np.array(set(A) & set(B))
+    result = np.array((A) & (B))
     if len(result) > 0: 
         sol_kt = np.where(A == result[0])[0] #A.index(result[0])
         sol_kw = np.where(B == result[0])[0]
