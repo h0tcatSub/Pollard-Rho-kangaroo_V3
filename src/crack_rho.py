@@ -51,7 +51,7 @@ def solve_rho(G, Y, bits_size):
 
     def new_xab(x, a, b, g, y, q):
         try:
-            subset = Y.y % 3
+            subset = Y.x % 3
         except ZeroDivisionError:
             subset = 2
         if subset == 0:

@@ -27,7 +27,7 @@ def solve_rho(G, Y, bits_size):
 
     def new_xab(x, a, b, g, y, q):
         try:
-            subset = Y.y % 3
+            subset = Y.x % 3
         except ZeroDivisionError:
             subset = 2
         if subset == 0:
@@ -63,8 +63,9 @@ def solve_rho(G, Y, bits_size):
 
 
 def main():
-    x = 0xf9308a019258c31049344f85f89d5229b531c845836f99b08601f113bce036f9
-    y = 0x388f7b0f632de8140fe337e62a37f3566500a99934c2231b6cb9fd7584b8e672
+    # 0x10000 Point
+    x = 0x363d90d447b00c9c99ceac05b6262ee053441c7e55552ffe526bad8f83ff4640
+    y = 0x04e273adfc732221953b445397f3363145b9a89008199ecb62003c7f3bee9de9 
     bits_size = 2 ** 16
     G = Point(Point.Gx, Point.Gy)
     Q = Point(x, y)
