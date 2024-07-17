@@ -1,7 +1,4 @@
-import numpy as np
-
 global modulo
-
 class Point:
     modulo = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
     order  = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
@@ -9,11 +6,20 @@ class Point:
     Gy = 0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8
     x  = 0
     y  = 0
+    G  = None
 
-    def __init__(self, x=Gx, y=Gy):
+    def __init__(self, a, b, order, modulo, x=Gx, y=Gy):
         self.x = x
         self.y = y
+        self.a = a
+        self.b = b
+        self.order  = order
+        self.modulo = modulo
+        self.G = Point(self.x, self.y)
     
+    def __str__(self):
+        return f"{self.x}\t{self.y}"
+
     def __mod__(self, q):
         return Point(self.x % q, self.y % q)
 
@@ -95,14 +101,3 @@ class Point:
             if scalar_bin[i] == "1":
                 G_p = self.add(G_p, G)
         return G_p
-
-
-step_bits = 0x1000
-keys = np.arange(1, step_bits)
-pub_keys = np.array([])
-G = Point()
-for k in keys:
-    pub_keys = np.append(pub_keys, G * k)
-    print(f"Generating public_keys.... [{k} / {step_bits}]", end="\r")
-print()
-print(pub_keys)
