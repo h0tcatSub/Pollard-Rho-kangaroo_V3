@@ -1,6 +1,5 @@
 import numpy as np
 
-global modulo
 class Point:
     modulo = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
     order  = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
@@ -9,10 +8,15 @@ class Point:
     x  = 0
     y  = 0
 
-    def __init__(self, x=Gx, y=Gy):
+    def __init__(self, order = order, modulo = modulo, x=Gx, y=Gy):
         self.x = x
         self.y = y
+        self.order  = order
+        self.modulo = modulo
     
+    def __str__(self):
+        return f"{self.x}\t{self.y}"
+
     def __mod__(self, q):
         return Point(self.x % q, self.y % q)
 
@@ -30,7 +34,7 @@ class Point:
 
 
     def __sub__(self, Q): #これは普段使いません。 離散対数問題や攻撃には使えるかも...?
-        diff_point = Point(self.x - Q.x, self.y - Q.y)
+        diff_point = Point(abs(self.x - Q.x), abs(self.y - Q.y))
         return diff_point
 
 
@@ -51,6 +55,8 @@ class Point:
         return Point(x, y)
 
     def add(self, p, q):
+        if p == q:
+            return self.double(p)
         tmp = ( (q.y-p.y) * self.rev(q.x-p.x) ) % self.modulo
         x = (tmp ** 2 - p.x -q.x) % self.modulo
         y = (tmp * (p.x - x) - p.y) % self.modulo
@@ -90,10 +96,13 @@ class Point:
         G_p = Point()
         scalar_bin = str(bin(k))[2:]
         for i in range (1, len(scalar_bin)):
-            G_p = self.double(G_p)#self.mul2(G_p, G_p)
+            G_p = G_p.double(G_p)#self.mul2(G_p, G_p)
             if scalar_bin[i] == "1":
-                G_p = self.add(G_p, G)
+                G_p = G_p.add(G_p, G)
         return G_p
+
+
+
 
 
 step_bits = 0x1000

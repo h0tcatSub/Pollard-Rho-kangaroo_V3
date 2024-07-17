@@ -1,4 +1,5 @@
-global modulo
+import numpy as np
+
 class Point:
     modulo = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
     order  = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
@@ -33,7 +34,7 @@ class Point:
 
 
     def __sub__(self, Q): #これは普段使いません。 離散対数問題や攻撃には使えるかも...?
-        diff_point = Point(self.x - Q.x, self.y - Q.y)
+        diff_point = Point(abs(self.x - Q.x), abs(self.y - Q.y))
         return diff_point
 
 
@@ -54,6 +55,8 @@ class Point:
         return Point(x, y)
 
     def add(self, p, q):
+        if p == q:
+            return self.double(p)
         tmp = ( (q.y-p.y) * self.rev(q.x-p.x) ) % self.modulo
         x = (tmp ** 2 - p.x -q.x) % self.modulo
         y = (tmp * (p.x - x) - p.y) % self.modulo
@@ -93,7 +96,7 @@ class Point:
         G_p = Point()
         scalar_bin = str(bin(k))[2:]
         for i in range (1, len(scalar_bin)):
-            G_p = self.double(G_p)#self.mul2(G_p, G_p)
+            G_p = G_p.double(G_p)#self.mul2(G_p, G_p)
             if scalar_bin[i] == "1":
-                G_p = self.add(G_p, G)
+                G_p = G_p.add(G_p, G)
         return G_p
