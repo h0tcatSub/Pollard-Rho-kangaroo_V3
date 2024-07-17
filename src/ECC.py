@@ -6,18 +6,12 @@ class Point:
     Gy = 0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8
     x  = 0
     y  = 0
-    a  = 0
-    b  = 7
-    G  = None
 
-    def __init__(self, a = 0, b = 7, order = order, modulo = modulo, x=Gx, y=Gy):
+    def __init__(self, order = order, modulo = modulo, x=Gx, y=Gy):
         self.x = x
         self.y = y
-        self.a = a
-        self.b = b
         self.order  = order
         self.modulo = modulo
-        self.G = Point(self.x, self.y)
     
     def __str__(self):
         return f"{self.x}\t{self.y}"
