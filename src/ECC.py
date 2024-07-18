@@ -90,7 +90,9 @@ class Point:
 
     def mulk(self, k):
         scalar_bin = str(bin(k))[2:]
-        G_p = Point(self.Gx, self.Gy)
+        gx = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798
+        gy = 0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8
+        G_p = Point(gx, gy)
         for i in range(1, len(scalar_bin)):
             tmp = ( (3 * (G_p.x ** 2)) * self.rev(2 * G_p.y) ) % self.modulo
             x   = (tmp ** 2 - 2 * G_p.x) % self.modulo
