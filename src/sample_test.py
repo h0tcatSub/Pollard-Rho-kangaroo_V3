@@ -7,19 +7,16 @@ def solve_rho(G, Y, bits_size):
 
     starttime = time.time()
     q = Y.order
+
     print(f'order = {q}')
 
-    pub_keys = np.array([])
-    for k in range(1, 4):
-        pub_keys = np.append(pub_keys, G * k)
-
-    if sum(np.isin(pub_keys, Y)) > 0:
-        print(pub_keys)
+    if sum(np.isin(G, Y)) > 0:
+        print(G)
         print()
         print(f"sol. time: {format((time.time()-starttime))} sec")
         print()
         print("Kamijo Touma >> Kill that illusion!!")
-        key = np.where(pub_keys == Y)[0][0] + 1
+        key = np.where(G == Y)[0][0] + 1
         assert G * key == Y
         print(f"Private Key : 0x{format(key, '064x')}")
         print("[+] OK.")
@@ -36,24 +33,33 @@ def solve_rho(G, Y, bits_size):
             return (x+g, (a+1) % q, b        )
         if subset == 2:
             return (x+y, a        , (b+1) % q)
-    x, a, b = Y, np.arange(bits_size), np.arange(bits_size)
-    X, A, B = x, np.arange(bits_size), np.arange(bits_size)
-    for i in range(1, q, bits_size):
+    print("Please wait...")
+    x, a, b = G, np.arange(1, bits_size), np.arange(1, bits_size)
+    X, A, B = x, np.arange(1, bits_size), np.arange(1, bits_size)
+    for i in range(17, q, bits_size):
         x, a, b = new_xab(x, a, b,  G, Y, q)
         X, A, B = new_xab(X, A, B,  G, Y, q)
         X, A, B = new_xab(X, A, B,  G, Y, q)
-        print(f"{x} , {X}")
-        if sum(np.isin(x, X)) > 0:
+        print(f"{i}: {x} , {X}", end="\r")
+        if np.any(x == X):#sum(x == X) > 0:
+            print()
             print("[+] Found Collision Pair!!")
             break
 
     print()
-    print(f"sol. time: {format((time.time()-starttime), '%.2f')} sec")
+    print(f"sol. time: {(time.time()-starttime)} sec")
     print()
     print("Kamijo Touma >> Kill that illusion!!")
     print()
-    res = ((a - A) * pow(B - b, -1, q)) % q
-    if G * res == Y:
+    def calculate_key_from_aAbB(a, A, b, B):
+        return ((a - A) * pow(B - b, -1, q)) % q
+    calculate_key_from_aAbB = np.vectorize(calculate_key_from_aAbB)
+    res = calculate_key_from_aAbB(a, A, b, B)#((a - A) * pow(B - b, -1, q)) % q
+
+    check_point = G * res
+    if sum(check_point == Y) > 0:
+
+        res = np.where(check_point == Y)[0][0] + 1
         print(f"Private Key : 0x{format(res, '064x')}")
         assert G * res == Y
         print("[+] OK.")
@@ -63,10 +69,12 @@ def solve_rho(G, Y, bits_size):
 
 
 def main():
-    # 0x10000 Point
-    x = 0x363d90d447b00c9c99ceac05b6262ee053441c7e55552ffe526bad8f83ff4640
-    y = 0x04e273adfc732221953b445397f3363145b9a89008199ecb62003c7f3bee9de9 
-    bits_size = 2 ** 16
+    #x  = 0xc6047f9441ed7d6d3045406e95c07cd85c778e4b8cef3ca7abac09b95c709ee5
+    #y  = 0x1ae168fea63dc339a3c58419466ceaeef7f632653266d0e1236431a950cfe52a
+    # 0x20000 Point
+    x = 0x4c1b9866ed9a7e9b553973c6c93b02bf0b62fb012edfb59dd2712a5caf92c541
+    y = 0xe60fce93b59e9ec53011aabc21c23e97b2a31369b87a5ae9c44ee89e2a6dec0a #0xc1f792d320be8a0f7fbcb753ce56e69cc652ead7e43eb1ad72c4f3fdc68fe020
+    bits_size = 2 ** 10
     G = Point(Point.Gx, Point.Gy)
     Q = Point(x, y)
     
@@ -80,13 +88,14 @@ def main():
     print("-" * 20)
     print()
     # ---- WIP ----
-    #keys = np.arange(1, bits_size)
-    #for k in keys:
-    #    pub_keys = np.append(pub_keys, G * k)
-    #    print(f"Generating Public_keys.... [{k} / {bits_size}]", end="\r")
+    keys = np.arange(1, bits_size)
+    pub_keys = np.array([])
+    for k in keys:
+        pub_keys = np.append(pub_keys, G * k)
+        print(f"Generating Public_keys.... [{k} / {bits_size}]", end="\r")
     print()
     print("[+] Start analysis... Kill that elliptic curve cryptography!!")
-    private_key = solve_rho(G, Q, bits_size)
+    private_key = solve_rho(pub_keys, Q, bits_size)
     file = open("FOUND_KEYS.txt", "w+")
     file.writelines(format(private_key, '064x'))
     file.close()

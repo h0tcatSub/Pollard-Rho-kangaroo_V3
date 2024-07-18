@@ -29,13 +29,13 @@ class Point:
         return self.mulk(b)
     
     def __eq__(self, Q):
+        # 今回は離散対数問題用に作ったもの。新しいアプリを作るためのものではない。
         match_x = self.x == Q.x
         match_y = self.y == Q.y
 
         matched_point = match_x and match_y
         return matched_point
-
-
+    
     def __sub__(self, Q): #これは普段使いません。 離散対数問題や攻撃には使えるかも...?
         #diff_point = Point((self.x - Q.x), (self.y - Q.y))
         return #diff_point
@@ -44,12 +44,13 @@ class Point:
     def __add__(self, q):
         if(q == self):
             tmp = ( (3 * (q.x ** 2)) * self.rev(2 * q.y) ) % self.modulo
-            self.x   = (tmp ** 2 - 2 * q.x)    % self.modulo
-            self.y   = (tmp * (q.x - self.x) - q.y) % self.modulo
+            x   = (tmp ** 2 - 2 * q.x)    % self.modulo
+            y   = (tmp * (q.x - self.x) - q.y) % self.modulo
         else:
             tmp = ( (q.y-self.y) * self.rev(q.x-self.x) ) % self.modulo
-            self.x = (tmp ** 2 - self.x -q.x) % self.modulo
-            self.y = (tmp * (self.x - self.x) - self.y) % self.modulo
+            x = (tmp ** 2 - self.x -q.x) % self.modulo
+            y = (tmp * (self.x - x) - self.y) % self.modulo
+        return Point(x, y)
 
     def double(self, P):
         tmp = ( (3 * (P.x ** 2)) * self.rev(2 * P.y) ) % self.modulo
