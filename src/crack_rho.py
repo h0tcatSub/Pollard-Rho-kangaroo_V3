@@ -1,3 +1,4 @@
+import math
 from ECC import Point
 
 import argparse
@@ -27,94 +28,240 @@ parser.add_argument("--bits_size",
                     type=int,
                     default=16)
 
-def solve_rho(G, Y, bits_size):
 
-    starttime = time.time()
-    q = Y.order
-    print(f'order = {q}')
+# ---- Forked by n0ri ---- 
+def rho_init(p_Q, p_R, r, q):
+    st_bit = 23
+    st_size = 2 << (st_bit - 1)
+    # set p_T,p_alp,p_bet
+    p_T = p_Q.add(p_R)           # T=Q+R on ECC 
+    p_alp = 1
+    p_bet = 1
+    # set st_n,Tlim
+    st_n = int(math.sqrt(r)*2)
+    Tlim = q
+    st_ptr = np.zeros((st_size),dtype=np.int32)
+    if st_n > st_size:
+        st_n = st_size
+        Tlim = q // 4
+    # set st_ptr
+    for k in range(st_n):             # all pointer = -1
+        st_ptr[k] = -1
+    return Tlim
 
-    pub_keys = np.array([])
-    for k in range(1, 4):
-        pub_keys = np.append(pub_keys, G * k)
+#=========================================================#
+#  Rho step in Rho method                                 #
+#    ip = p_T[0] (mod 3)                                  #
+#    ip=0: T=2*T, alp=2*alp, bet=2*bet (mod r)            #
+#    ip=1: T=T*Q, alp=alp+1 (mod r)                       #
+#    ip=2: T=T*R, bet=bet+1 (mod r)                       #
+#---------------------------------------------------------#
+#  copy right : Ushiro Yasunori (ISCPC)                   #
+#    date : 2020/03/16                                    #
+#=========================================================#
+def rho_step(p_T, p_Q, p_R, p_alp, p_bet):
+   ip = p_T.x % 3                   # ip=p_T[0] (mod 3)
+   if (ip == 0):
+      p_T *= p_T            # p_T = 2*p_T on ECC
+      p_alp = (2*p_alp) % p_Q.order
+      p_bet = (2*p_bet) % p_Q.order
+   if (ip == 1):
+      p_T += p_Q        # p_T += p_Q on ECC
+      p_alp = (p_alp + 1) % p_Q.order
+   if (ip == 2):
+      p_T += p_R        # p_T += p_R on ECC
+      p_bet = (p_bet + 1) % p_Q.order
 
-    if sum(np.isin(pub_keys, Y)) > 0:
-        print(pub_keys)
-        print()
-        print(f"sol. time: {format((time.time()-starttime))} sec")
-        print()
-        print("Kamijo Touma >> Kill that illusion!!")
-        key = np.where(pub_keys == Y)[0][0] + 1
-        assert G * key == Y
-        print(f"Private Key : 0x{format(key, '064x')}")
-        print("[+] OK.")
-        return key
+#=========================================================#
+#  Set list plus Ty                                       #
+#    plas Ty : p_T[1] <= g_p/2                            #
+#    return : list = [p_T[0],p_alp,p_bet]                 #
+#---------------------------------------------------------#
+#  copy right : Ushiro Yasunori (ISCPC)                   #
+#    date : 2020/01/30                                    #
+#=========================================================#
+def plus_Ty(p_T, p_alp, p_bet):
+   list = [p_T.x, p_alp, p_bet]
+   if p_T[1] > (p_T.order >> 1):
+      list[1] = p_T.order - p_alp
+      list[2] = p_T.order - p_bet
+   return list
 
-    def new_xab(x, a, b, g, y, q):
-        try:
-            subset = Y.x % 3
-        except ZeroDivisionError:
-            subset = 2
-        if subset == 0:
-            return (x+x, (a*2) % q, (b*2) % q)
-        if subset == 1:
-            return (x+g, (a+1) % q, b        )
-        if subset == 2:
-            return (x+y, a        , (b+1) % q)
-    x, a, b = Y, np.arange(bits_size), np.arange(bits_size)
-    X, A, B = x, np.arange(bits_size), np.arange(bits_size)
-    for i in range(1, q, bits_size):
-        x, a, b = new_xab(x, a, b,  G, Y, q)
-        X, A, B = new_xab(X, A, B,  G, Y, q)
-        X, A, B = new_xab(X, A, B,  G, Y, q)
-        print(f"{x} , {X}")
-        if sum(np.isin(x, X)) > 0:
-            print("[+] Found Collision Pair!!")
-            break
+def fermat(b, n):
+    return pow(b, -1, n)
 
-    print()
-    print(f"sol. time: {format((time.time()-starttime), '%.2f')} sec")
-    print()
-    print("Kamijo Touma >> Kill that illusion!!")
-    print()
-    res = ((a - A) * pow(B - b, -1, q)) % q
-    if G * res == Y:
-        print(f"Private Key : 0x{format(res, '064x')}")
-        assert G * res == Y
-        print("[+] OK.")
-        return res
+def inv_mod(b, modulo):
+    if b == 0:
+        return None
+    if (type(b) != int) or ((b >= 2) and (b % 2 == 0)):
+        low, high = b % modulo, modulo
+        c0, c1 = 1, 0
+        while low > 1:
+            r = high // low
+            c2 = c1 - c0 * r
+            new = high - low * r
+            high = low
+            low = new
+            c1 = c0
+            c0 = c2
+        return c0 % modulo
 
-    return None
+    return fermat(b, modulo)
+#=========================================================#
+#  Solve n with T == old-T                                #
+#    n = (al-Tab[1])/(Tab[2]-bl) (mod g_r)                #
+#      Tab[1]=p_alp, Tab[2]=p_bet under p_T[0] > 0        #
+#---------------------------------------------------------#
+#  copy right : Ushiro Yasunori (ISCPC)                   #
+#    date : 2020/03/18                                    #
+#=========================================================#
+def sol_equal(loop, al, bl, n_tbl, n_sol, n_lp, g_r):
+   Tab = plus_Ty()                 # get alp,bet : T[0]>0
+   bval = Tab[2] - bl
+   n = 0
+   if bval != 0:
+      binv = inv_mod(bval, g_r)     # 1/bval (mod g_r)
+      aval = al - Tab[1]
+      n = (aval*binv) % g_r
+      n_sol[n_tbl] = n             # set n (solve)
+      n_lp[n_tbl] = loop           # set loop
 
-def main():
-    args = parser.parse_args()
-    p = int(args.prime, 16)
-    n = int(args.order, 16)
-    x = int(args.x, 16)
-    y = int(args.y, 16)
-    bits_size = 2 ** int(args.bits_size)
-    G = Point()
-    Q = Point(x, y)
-    
-    print("-" * 20)
-    print()
-    print(f"Modulo prime number   : {format(p, '064x')}")
-    print(f"Order                 : {format(n, '064x')}")
-    print(f"Point X               : {format(x, '064x')}")
-    print(f"Point y               : {format(y, '064x')}")
-    print()
-    print("-" * 20)
-    print()
-    # ---- WIP ----
-    #keys = np.arange(1, bits_size)
-    #for k in keys:
-    #    pub_keys = np.append(pub_keys, G * k)
-    #    print(f"Generating Public_keys.... [{k} / {bits_size}]", end="\r")
-    print()
-    print("[+] Start analysis... Kill that elliptic curve cryptography!!")
-    private_key = solve_rho(G, Q, bits_size)
-    file = open("FOUND_KEYS.txt", "w+")
-    file.writelines(format(private_key, '064x'))
-    file.close()
-    
-if __name__ == "__main__":
-    main()
+#=========================================================#
+#  Solve n with  T == 0                                   #
+#    n = Tab[1]/(g_r-Tab[2]) (mod g_r)                    #
+#      Tab[1]=p_alp, Tab[2]=p_bet under p_T[0] > 0        #
+#---------------------------------------------------------#
+#  copy right : Ushiro Yasunori (ISCPC)                   #
+#    date : 2020/03/18                                    #
+#=========================================================#
+def sol_zero(loop, p_alp, p_bet, g_r, n_tbl, n_sol, n_lp):
+   #global fout, n_tbl, n_sol,n_lp
+   Tab = plus_Ty()                 # get alp,bet : T[0]>0
+   bval = g_r - p_bet
+   binv = inv_mod(bval, g_r)        # 1/bval (mod g_r)
+   n = (p_alp*binv) % g_r
+   n_sol[n_tbl] = n                # set n (solve)
+   n_lp[n_tbl] = loop              # set loop
+
+#=========================================================#
+#  Equal check in Rho method                              #
+#    if pointer equal:                                    #
+#       if Tx equal:                                      #
+#          sol_equal()                                    #
+#          return 1           #solved by equal            #
+#       else:                                             #
+#          change st_Tab                                  #
+#    else:                                                #
+#       change st_ptr                                     #
+#       add st_Tab                                        #
+#    return 0                                             #
+#---------------------------------------------------------#
+#  copy right : Ushiro Yasunori (ISCPC)                   #
+#    date : 2020/01/30                                    #
+#=========================================================#
+def equal_ck(loop, p_T, st_tab, st_ptr, st_n):
+   #global st_Tab,st_ptr,st_n
+# check pointer equal
+   pt = p_T.x % st_n                  # p_T[0] (mod st_n)
+   stv = st_ptr[pt]
+   Tab = plus_Ty()                     # get value : T[0]>0
+   if stv >= 0:                        # check used table      
+      if p_T[0] == st_tab[stv][0]:
+         alp = st_tab[stv][1]          # alp in table
+         bet = st_tab[stv][2]          # bet in table
+         sol_equal(loop,alp,bet)       # solve equal
+         return 1
+# change st_Tab
+      else:
+         st_tab[stv] = Tab
+# change st_ptr & add st_Tab
+   else:
+      st_ptr[pt] = len(st_tab)         # point last
+      st_tab.append(Tab)
+   return 0
+
+#=========================================================#
+#  Rho method in ECC solver                               #
+#    set Rho table                                        #
+#    initialize Rho step                                  #
+#    loop from solve or limit                             #
+#       if p_T == zero: sol_zero                          #
+#---------------------------------------------------------#
+#  copy right : Ushiro Yasunori (ISCPC)                   #
+#    date : 2020/03/17                                    #
+#=========================================================#
+def rho_method(G, Q):
+   Tlim = rho_init()                   # Rho step initaial
+   lpmx = int(math.sqrt(G.order)*10)       # Rho loop max
+# Rho step
+   outc = 0
+   for lp in range(lpmx):
+      outc += 1
+      rho_step()
+      if (Q.x == 0) and (Q.y == 0):                 # solve by T=zero
+         sol_zero(lp+1) 
+         return 2
+      if Q.x < Tlim:                # only feature poin
+         id = equal_ck(lp+1)           # check T=old T 
+         if id != 0:
+            return 1                   # solved by T= old T
+      if outc >= 5000000:
+         print("steps=",(lp+1)//1000000,"M")
+         outc = 0
+   return 0                            # not solve
+
+#=========================================================#
+#  Solve n for R=n*Q                                      #
+#     p_Q,p_R : Points on the ECC, n : small integer      #
+#---------------------------------------------------------#
+#  copy right : Ushiro Yasunori (ISCPC)                   #
+#    date : 2020/03/19                                    #
+#=========================================================#
+def SolRnQ(mlp, g_r, p_Q, p_R, n_tbl, n_sol, n_lp):
+   #global g_r, p_Q,p_R, fout
+   #global fout, n_tbl, n_sol,n_lp
+   Rck = p_Q
+   for k in range(mlp):
+      if Rck == p_R:
+         n = (k + 1) % g_r
+         n_sol[n_tbl] = n               # set n (solve)
+         n_lp[n_tbl] = k + 1            # set loop
+         return n 
+      Rck += p_Q
+   return -1
+
+#=========================================================#
+#  CRT (Chinese Remainder Theorem) with 2 number          #
+#---------------------------------------------------------#
+#  Get c from a=c (mod p), b=c (mod q), gcd(p,q)=1        #
+#    s=1/p (mod q), t=s*(b-a) (mod q)                     #
+#    c=a+p*t                                              #
+#---------------------------------------------------------#
+#  copy right : Ushiro Yasunori (ISCPC)                   #
+#    date : 2020/03/15                                    #
+#=========================================================#
+def CRT_2(a,b, p, q):
+   s = inv_mod(p, q)                # s=1/p (mod q)
+   t = ( s*(b - a) ) % q
+   c = a + p*t
+   return c
+
+#=========================================================#
+#  CRT (Chinese Remainder Theorem) with n number          #
+#---------------------------------------------------------#
+#  Get c from a[k]=c mod p[k], k=0,1,...,n-1              #
+#---------------------------------------------------------#
+#  copy right : Ushiro Yasunori (ISCPC)                   #
+#    date : 2020/03/15                                    #
+#=========================================================#
+def CRT_n(n, A, P):
+   p = P[0]
+   a = A[0]
+   for k in range(n-1):
+      q = P[k+1]
+      b = A[k+1]
+      c = CRT_2(a,b, p,q)
+      p = p*q
+      a = c
+   return c
+

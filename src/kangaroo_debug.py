@@ -1,8 +1,7 @@
 from math import gcd
-import random
 from ECC import Point
 
-import argparse
+import random
 import numpy as np
 import time
 

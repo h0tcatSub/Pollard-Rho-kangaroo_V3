@@ -73,7 +73,7 @@ class Point:
     def rev(self, b, modulo = modulo):
         if b == 0:
             return None
-        if type(b) == float:
+        if (type(b) != int) or ((b >= 2) and (b % 2 == 0)):
             low, high = b % modulo, modulo
             c0, c1 = 1, 0
             while low > 1:
