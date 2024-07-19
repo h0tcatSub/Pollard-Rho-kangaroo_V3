@@ -55,10 +55,11 @@ def simple_solve(Gs, Y, Z, bits_size):
 
 def main():
     G = Point(Point.Gx, Point.Gy)
+    args = parser.parse_args()
     p = G.modulo
     n = G.order
-    x = 0x5b2c6b57cfdc1bf86dfaadc3c7b10b7bebe5c5e1e415ca92d740c58f3b62e88e#x
-    y = 0x5df3b7f51bb5b17ad971a6d0886ebd8b55895e4a62e90c4571662ddbe02e7f5b#y
+    x = int(args.x, 16)#0x5b2c6b57cfdc1bf86dfaadc3c7b10b7bebe5c5e1e415ca92d740c58f3b62e88e#x
+    y = int(args.y, 16)#0x5df3b7f51bb5b17ad971a6d0886ebd8b55895e4a62e90c4571662ddbe02e7f5b#y
     Y = G * 0x10000#Point(x, y)
     bits_size = 2 ** 14 + 1#int(args.bits_size)
     keys = np.arange(1, bits_size)
