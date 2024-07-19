@@ -8,35 +8,39 @@ def solve_rho(G, Y, bits_size):
     starttime = time.time()
     q = Y.order
 
+    e = Point(0,0)
     print(f'order = {q}')
 
     if sum(np.isin(G, Y)) > 0:
-        print(G)
         print()
         print(f"sol. time: {format((time.time()-starttime))} sec")
         print()
         print("Kamijo Touma >> Kill that illusion!!")
         key = np.where(G == Y)[0][0] + 1
-        assert G * key == Y
+        G = Point(Point.Gx, Point.Gy)
+        R = G * key
+        assert R == Y
         print(f"Private Key : 0x{format(key, '064x')}")
         print("[+] OK.")
         return key
 
     def new_xab(x, a, b, g, y, q):
         try:
-            subset = Y.x % 3
+            subset = x % 3
         except ZeroDivisionError:
             subset = 2
-        if subset == 0:
-            return (x+x, (a*2) % q, (b*2) % q)
-        if subset == 1:
-            return (x+g, (a+1) % q, b        )
-        if subset == 2:
-            return (x+y, a        , (b+1) % q)
+        for i in range(len(subset)):
+            if subset[i].x == 0:
+                return (x+x, (a*2) % q, (b*2) % q)
+            if subset[i].x == 1:
+                return (x+g, (a+1) % q, b        )
+            if subset[i].x == 2:
+                return (x+y, a        , (b+1) % q)
+    
     print("Please wait...")
     x, a, b = G, np.arange(1, bits_size), np.arange(1, bits_size)
     X, A, B = x, np.arange(1, bits_size), np.arange(1, bits_size)
-    for i in range(17, q, bits_size):
+    for i in range(1, q, bits_size):
         x, a, b = new_xab(x, a, b,  G, Y, q)
         X, A, B = new_xab(X, A, B,  G, Y, q)
         X, A, B = new_xab(X, A, B,  G, Y, q)
@@ -74,9 +78,9 @@ def main():
     # 0x20000 Point
     x = 0x4c1b9866ed9a7e9b553973c6c93b02bf0b62fb012edfb59dd2712a5caf92c541
     y = 0xe60fce93b59e9ec53011aabc21c23e97b2a31369b87a5ae9c44ee89e2a6dec0a #0xc1f792d320be8a0f7fbcb753ce56e69cc652ead7e43eb1ad72c4f3fdc68fe020
-    bits_size = 2 ** 10
+    bits_size = 2 ** 10 + 1
     G = Point(Point.Gx, Point.Gy)
-    Q = Point(x, y)
+    Q = G * 2000#Point(x, y)
     
     print("-" * 20)
     print()

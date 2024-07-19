@@ -38,9 +38,8 @@ class Point:
     
     def __sub__(self, Q): #これは普段使いません。 離散対数問題や攻撃には使えるかも...?
         #diff_point = Point((self.x - Q.x), (self.y - Q.y))
-        if type(Q) == int:
-            return self.x - Q
-        return Point(self.x - Q.x, self.y - Q.y)#diff_point
+        self.x -= Q.x
+        self.y -= Q.y#diff_point
 
 
     def __add__(self, q):
@@ -52,19 +51,24 @@ class Point:
             tmp = ( (q.y-self.y) * self.rev(q.x-self.x) ) % self.modulo
             x = (tmp ** 2 - self.x -q.x) % self.modulo
             y = (tmp * (self.x - x) - self.y) % self.modulo
-        return Point(x, y)
+        self.x = x
+        self.y = y
+        #return Point(x, y)
 
     def double(self, P):
         tmp = ( (3 * (P.x ** 2)) * self.rev(2 * P.y) ) % self.modulo
         x   = (tmp ** 2 - 2 * P.x) % self.modulo
         y   = (tmp * (P.x - x) - P.y) % self.modulo
-        return Point(x, y)
+        self.x = x
+        self.y = y
+        #return Point(x, y)
 
     def add(self, p, q):
         tmp = ( (q.y-p.y) * self.rev(q.x-p.x) ) % self.modulo
         x = (tmp ** 2 - p.x -q.x) % self.modulo
         y = (tmp * (p.x - x) - p.y) % self.modulo
-        return Point(x, y)
+        self.x = x
+        self.y = y
 
         
     def fermat(self, b, n):
