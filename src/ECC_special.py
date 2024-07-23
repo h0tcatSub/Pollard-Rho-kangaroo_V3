@@ -86,8 +86,8 @@ class Point:
     def discrete_log_rho_vetor_method(self, bits_size = 8, random_mode = False):
         bits_size = 2 ** bits_size
         key = None
-        alpha_vec = np.arange(1, bits_size, dtype=object)
-        beta_vec  = np.arange(1, bits_size, dtype=object)
+        alpha_vec = np.full(bits_size, 1, dtype=object)
+        beta_vec  = np.full(bits_size, 1, dtype=object)
         X = np.array([])
         X2 = np.array([])
         global G
@@ -97,7 +97,7 @@ class Point:
         _G  = Point(Point.x, Point.y)
         _G2 = Point(Point.x, Point.y)
         for i in range(1, bits_size):
-            EG = ECC.Point(Point.Gx, Point.Gy) * (i)
+            EG = ECC.Point(Point.Gx, Point.Gy) * i
             _G = Point(EG.x, EG.y)
             _G2 = Point(EG.x, EG.y)
             X = np.append(X, _G)
