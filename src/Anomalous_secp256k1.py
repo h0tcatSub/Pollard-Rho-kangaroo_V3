@@ -1,9 +1,9 @@
 import numpy as np
-import Anomalous_secp256k1 
+import ECC
 
 class Point:
-    modulo = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
-    order  = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
+    modulo = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F#0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141 #0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
+    order  = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F #SSSA Forge #0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
     Gx = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798
     Gy = 0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8
     x  = 0
@@ -22,10 +22,8 @@ class Point:
         return Point(self.x % q, self.y % q)
 
     def __mul__(self, b):
-        if (type(b) == Point):
+        if (type(b) == Point) or (type(b) == ECC.Point):
             return self.double(b)
-        elif (type(b) == Anomalous_secp256k1.Point):
-            return b.double(self)
         if type(b) == np.ndarray:
             mulk_vec = np.vectorize(self.mulk)
             return mulk_vec(b)
@@ -93,9 +91,7 @@ class Point:
 
     def mulk(self, k):
         scalar_bin = str(bin(k))[2:]
-        gx = 0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798
-        gy = 0x483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8
-        G_p = Point(gx, gy)
+        G_p = Point(self.Gx, self.Gy)
         for i in range(1, len(scalar_bin)):
             tmp = ( (3 * (G_p.x ** 2)) * self.rev(2 * G_p.y) ) % self.modulo
             x   = (tmp ** 2 - 2 * G_p.x) % self.modulo

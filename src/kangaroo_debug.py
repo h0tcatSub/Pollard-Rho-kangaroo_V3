@@ -59,8 +59,8 @@ def kangaroo_algorithm(g, h, n, factors, B, bits_size):
 
     kangaroo_attack_vec = np.vectorize(kangaroo_attack)
     print("Performing Kangaroo algorithm...")
-    P = np.arange(B)
-    Q = np.arange(B)
+    P = np.arange(B) + 1
+    Q = np.arange(B) + 1
     wild_kangaroos = [(random.randint(1, n - 1), random.randint(1, n - 1)) for _ in range(10)]  # Multiple parallel wild kangaroos
     wild_jump_size = random.randint(1, B // 10)  # Randomized wild kangaroo step size
     
@@ -74,13 +74,11 @@ def kangaroo_algorithm(g, h, n, factors, B, bits_size):
             print(P, B)
             u = wild_x
             v = wild_y
-            kangaroo_point.x = u
-            kangaroo_point.x = v
             for _ in range(wild_jump_size):
-                u = (g * kangaroo_point)
-                v = (kangaroo_point * h)
+                u = (g * u)
+                v = (h * v)
             _d = calc_d_vec(u, v, n)
-            if ((np.any(1 < _d) and np.any(_d < n))):
+            if ((np.all(1 < _d) and np.all(_d < n))):
                     d = np.where((np.any(1 < _d) and np.any(_d < n)) == True)[0][0] + 1
                     if random.randint(0, 100) >= 20: # 単純に楽しみたいだけ
                         print("Accelerator >> It's a one-way street from here on out!!")
