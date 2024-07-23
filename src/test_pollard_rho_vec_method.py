@@ -7,7 +7,7 @@ import argparse
 def main():
     G  = ecc.Point(ecc.Point.Gx, ecc.Point.Gy)
 
-    Y = (G) * 300
+    Y = G * 1000
     x = Y.x
     y = Y.y
     Y = secc.Point(x, y)

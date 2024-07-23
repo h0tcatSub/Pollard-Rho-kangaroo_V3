@@ -88,6 +88,8 @@ class Point:
         key = None
         alpha_vec = np.full(bits_size, 1, dtype=object)
         beta_vec  = np.full(bits_size, 1, dtype=object)
+        alpha_vec_2 = np.full(bits_size, 1, dtype=object)
+        beta_vec_2  = np.full(bits_size, 1, dtype=object)
         X = np.array([])
         X2 = np.array([])
         global G
@@ -96,7 +98,7 @@ class Point:
         print("Generating Vector...")
         _G  = Point(Point.x, Point.y)
         _G2 = Point(Point.x, Point.y)
-        for i in range(1, bits_size):
+        for i in range(1, bits_size + 1):
             EG = ECC.Point(Point.Gx, Point.Gy) * i
             _G = Point(EG.x, EG.y)
             _G2 = Point(EG.x, EG.y)
@@ -104,7 +106,7 @@ class Point:
             X2 = np.append(X2, _G2)
         #X  = np.full(bits_size, _G)
         #X2 = np.full(bits_size, _G2)
-            print(f"[{i} / [{bits_size}]\t{format(G.x, '064x')}\t{format(G.y, '064x')}", file=sys.stderr)
+            print(f"[{i} / [{bits_size}]\t{format(EG.x, '064x')}\t{format(EG.y, '064x')}", file=sys.stderr)
 
         #for i in range(0, bits_size):
         #e = Point(0, 0)  #単位元
@@ -118,19 +120,22 @@ class Point:
 
         mods_x = None
 
-        alpha_vec_2 = np.arange(1, bits_size, dtype=object)
-        beta_vec_2  = np.arange(1, bits_size, dtype=object)
 
         def f(x, a, b):
-            global mods_x
+            global mods_x, G
             mods_x = x % 3
 
-            x[mods_x == 0] + G#b[mods_x == 0]
-            x[mods_x == 1] + x[mods_x == 1]
-            x[mods_x == 2] + self#a[mods_x == 2]
+            x[mods_x == 0] * b[mods_x == 0]
+            x[mods_x == 1] * x[mods_x == 1]
+            x[mods_x == 2] * a[mods_x == 2]
             
-            
+        def f_2(x, x2, a, b):
+            global mods_x, G
+            mods_x = x % 3
 
+            x2[mods_x == 0] * b[mods_x == 0]
+            x2[mods_x == 1] * x2[mods_x == 1]
+            x2[mods_x == 2] * a[mods_x == 2]
             #x[mods_x == 0] = (x[mods_x == 0] * b[mods_x == 0]) % self.modulo
             #x[mods_x == 1] = (x[mods_x == 1] * x[mods_x == 1]) % self.modulo
             #x[mods_x == 2] = (x[mods_x == 2] * a[mods_x == 2]) % self.modulo
@@ -151,23 +156,20 @@ class Point:
             b[mods_x == 1] *= 2
             b[mods_x == 1] %= self.order
 
-
-
-        f_vec = np.vectorize(f)
         starttime = time.time()
         print("[+] Start analysis... Kill that elliptic curve cryptography!!", file=sys.stderr)
         progress = 1
         for i in range(1, self.order, bits_size):
 
-            print(f"Progress : {i}\t Alpha : {alpha_vec}\t Beta : {beta_vec}\tAlpha_2 : {alpha_vec_2}\t Beta_2 : {beta_vec_2}", file=sys.stderr)
+            print(f"Progress : {progress}\t Alpha : {alpha_vec}\t Beta : {beta_vec}\tAlpha_2 : {alpha_vec_2}\t Beta_2 : {beta_vec_2}", file=sys.stderr)
             f(X[:], alpha_vec[:], beta_vec[:])
             g(X[:], alpha_vec[:])
             h(X[:], beta_vec[:])
             
-            f(X2[:], alpha_vec_2[:], beta_vec_2[:])
-            f(X2[:], alpha_vec_2[:], beta_vec_2[:])
-            g(X2[:], alpha_vec[:])
-            h(X2[:], beta_vec[:])
+            for i in range(2):
+                f_2(X[:], X2[:], alpha_vec_2[:], beta_vec_2[:])
+                g(X2[:], alpha_vec_2[:])
+                h(X2[:], beta_vec_2[:])
             #f(X2[:], alpha_vec_2[:], beta_vec_2[:])
             #f(X2[:], alpha_vec_2[:], beta_vec_2[:])
             #f(X2[:], alpha_vec_2[:], beta_vec_2[:])
@@ -186,9 +188,9 @@ class Point:
             #h(X2[:], beta_vec_2[:])
 
 
-            if np.all(X == X2):#np.any(X == self) and np.any(X2 == self): #np.any(X == X2):#np.any(X == self) and np.any(X2 == self):#np.any(X == self) and np.any(X2 == self):#(np.isin(X == X2, True)) > 0:
+            if np.any(X == X2):#np.any(X == self) and np.any(X2 == self): #np.any(X == X2):#np.any(X == self) and np.any(X2 == self):#np.any(X == self) and np.any(X2 == self):#(np.isin(X == X2, True)) > 0:
                 #collision_index = np.where((X == self) == True)#np.where(X == X2)[0][0])
-                b = beta_vec - beta_vec_2 #int(beta_vec[X == self] - beta_vec_2[X2 == self])
+                #b = beta_vec - beta_vec_2 #int(beta_vec[X == self] - beta_vec_2[X2 == self])
                 print("[+] FOUND Point !!", file=sys.stderr)
                 G = ECC.Point(Point.Gx, Point.Gy)
                 try:
@@ -200,9 +202,12 @@ class Point:
                     #print(key, file=sys.stderr)
                     #found_key_index = (np.where(self in Y)[0])
                     #key = key[found_key_index[0]]
+                    print(f"Key Range : {progress} - {progress + bits_size}")
+                    key = np.arange(progress, progress + bits_size)
                     Y = G * key
-                    print(f" G * {key} == {self}", file=sys.stderr)
-                    assert self == Y
+                    print(f"[G * ({key})] in {self}", file=sys.stderr)
+                    assert self in Y
+                    key = int(key[self in Y])
                     print("[+] OK", file=sys.stderr)
                     endtime = time.time() - starttime
                     print(f"sol time {endtime}", file=sys.stderr)
